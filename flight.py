@@ -9,6 +9,8 @@ import sqlite3
 #   dans le code.
 #
 import Tkinter as tk
+from Tkinter import *
+
 
 #
 #  Il faudra rajouter des fonctions Ã  sqlite. Elles seront importÃ©es ici.
@@ -26,14 +28,44 @@ class Horaires_tk(tk.Tk):
         self.emplacement = emplacement
         self.createWidgets()
         self.initialize()
-        
+
     def createWidgets(self):
         top=self.winfo_toplevel()                
         top.rowconfigure(0, weight=1)            
         top.columnconfigure(0, weight=1)         
         self.rowconfigure(0, weight=1)           
         self.columnconfigure(0, weight=1)        
+    
+    def ok(self, variable, event=None):
 
+        if not self.validate():
+            return
+
+        self.update_idletasks()
+        name = variable
+        print name
+        result = name.split(", ")
+        print result[1]
+        self.depart.delete(0, END)
+        self.depart.insert(0,result[1])
+        self.cancel()
+
+    def cancel(self, event=None):
+        self.reset()
+        self.recherche()
+        self.top.destroy()
+    
+    def validate(self):
+
+        return 1 # override
+
+    def apply(self):
+
+        pass # override
+
+    def hide_me(event):
+        event.widget.pack_forget()
+        
     def ferme_fichier(self, event):
         self.conn.close()
 
@@ -133,7 +165,7 @@ class Horaires_tk(tk.Tk):
 
         self.bouton_recherche = tk.Button(self.formulaire,
                                                text="Recherche",
-                                               command=self.recherche)
+                                               command= self.recherche)
         self.bouton_recherche.grid(column=0,row=3, padx=10)
         self.bouton_RAZ = tk.Button(self.formulaire,
                                          text="Nouvelle Recherche",
@@ -216,13 +248,36 @@ class Horaires_tk(tk.Tk):
         #
         depart = self.depart.get();
         arrivee = self.arrivee.get();
-        
+        nbCity = 0;
+        done = False
         cur = self.conn.cursor()
         if(len(depart) > 3):
-            query = "Select count(City) from usedAirports where City=?"
-            cur.execute(query,[depart])
-            nbCity = cur.fetchmany()
-            self.liste_de_vols.insert(tk.END,nbCity[0])
+            query = "Select IATA, Name, (select count(City) from usedAirports where City=?) as nb_total from usedAirports where City=?"
+            cur.execute(query,[depart,depart])
+            result = cur.fetchmany()
+            if(len(result) > 0):
+                nbCity = result[0][2]
+                self.liste_de_vols.insert(tk.END,nbCity)
+
+        if(nbCity > 1):
+            OPTIONS = []
+            
+            while len(result) > 0:
+                for row in result:
+                        OPTIONS.append(row[1] +', '+ row[0]) 
+                result = cur.fetchmany()
+             
+            box = Tk()
+            self.top = box
+            variable = StringVar(box)
+            variable.set(OPTIONS[0]) # default value
+            w = apply(OptionMenu, (box, variable) + tuple(OPTIONS))
+            w.pack()
+            w = Button(box, text="OK", width=10, command=lambda: self.ok(variable.get()), default=ACTIVE)
+            w.pack(side=LEFT, padx=5, pady=5)
+            w = Button(box, text="Cancel", width=10, command=box.destroy)
+            w.pack(side=LEFT, padx=5, pady=5)
+            
         # Test des villes (aéroports avec le même nom de ville mais pas le même IATA
         # Test à la saisie ou test à la recherche ?
         
@@ -263,26 +318,31 @@ class Horaires_tk(tk.Tk):
         found = 0
         display = ''
         
-        while len(result) > 0:
-            for row in result:
-                i = 0
-                display = ''
-                while(i < len(row)):
-                    display += str(row[i]) + ' ' 
-                    i+=1
-                self.liste_de_vols.insert(tk.END,display)
-            found += 1
-            result = cur.fetchmany()
-        if found == 0:
+        if(nbCity <= 1):
+            while len(result) > 0:
+                for row in result:
+                    i = 0
+                    display = ''
+                    while(i < len(row)):
+                        display += str(row[i]) + ' ' 
+                        i+=1
+                    self.liste_de_vols.insert(tk.END,display)
+                    found += 1
+                    result = cur.fetchmany()
+        if (found == 0 and nbCity <= 1):
             self.liste_de_vols.insert(tk.END, '*** No flights found ***')
+        
+        if(nbCity <= 1):
         #
         #  AprÃ¨s avoir affichÃ©, on rÃ©cupÃ¨re tous les sous-Ã©lÃ©ments
         #  du formulaire pour les dÃ©sactiver. On rÃ©active ensuite
         #  le bouton "Nouvelle Recherche"
         #
-        for element in self.formulaire.children.values():
-            element.config(state = tk.DISABLED)
-        self.bouton_RAZ.config(state = tk.NORMAL)
+
+
+            for element in self.formulaire.children.values():
+                element.config(state = tk.DISABLED)
+            self.bouton_RAZ.config(state = tk.NORMAL)
         cur.close()
 
 
@@ -311,6 +371,31 @@ class Horaires_tk(tk.Tk):
         # l'aÃ©roport de dÃ©part.
         self.depart.focus_set()
         
+    def reset(self):
+        # PrÃ©paration pour une nouvelle recherche
+        # On efface d'abord le rÃ©sultat prÃ©cÃ©dent.
+        self.liste_de_vols.delete(0, tk.END)
+        # On rÃ©-active tous les Ã©lÃ©ments du formulaire
+        #for element in self.formulaire.children.values():
+            #element.config(state = tk.NORMAL)
+        # On efface le contenu des champs, et on remet le format
+        # en gris pour la date.
+        #self.depart.delete(0, tk.END)
+        #self.arrivee.delete(0, tk.END)
+        #self.date_depart.delete(0, tk.END)
+        #self.date_depart.config(fg='darkgray')
+        #self.date_depart.insert(0, 'AAAAMMJJ')
+        # Il faut rÃ©activer ce qui efface le modÃ¨le et
+        # passe en noir, cela ne fonctionne qu'une fois
+        # sinon.
+        self.date_depart.config(validate='focusin')
+        self.date_depart.config(validatecommand=self.prepare_date)
+        # On dÃ©sactive le bouton "Nouvelle Recherche"
+        self.bouton_RAZ.config(state = tk.DISABLED)
+        # On positionne dans le champ correspondant Ã 
+        # l'aÃ©roport de dÃ©part.
+        self.depart.focus_set()
+
 if __name__ == "__main__":
     #
     #  On suppose que le fichier sqlite est dans le
