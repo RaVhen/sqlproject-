@@ -36,7 +36,7 @@ class Horaires_tk(tk.Tk):
         self.rowconfigure(0, weight=1)           
         self.columnconfigure(0, weight=1)        
     
-    def ok(self, variable, event=None):
+    def okd(self, variable, event=None):
 
         if not self.validate():
             return
@@ -50,11 +50,30 @@ class Horaires_tk(tk.Tk):
         self.depart.insert(0,result[1])
         self.cancel()
 
+    def oka(self, variable, event=None):
+
+        if not self.validate():
+            return
+
+        self.update_idletasks()
+        name = variable
+        print name
+        result = name.split(", ")
+        print result[1]
+        self.arrivee.delete(0, END)
+        self.arrivee.insert(0,result[1])
+        self.cancel2()
+
     def cancel(self, event=None):
         self.reset()
         self.recherche()
         self.top.destroy()
-    
+
+    def cancel2(self, event=None):
+        self.reset()
+        self.recherche()
+        self.right.destroy()  
+  
     def validate(self):
 
         return 1 # override
@@ -248,23 +267,24 @@ class Horaires_tk(tk.Tk):
         #
         depart = self.depart.get();
         arrivee = self.arrivee.get();
-        nbCity = 0;
+        nbCityd = 0;
+        nbCitya = 0;
         done = False
         cur = self.conn.cursor()
         if(len(depart) > 3):
-            query = "Select IATA, Name, (select count(City) from usedAirports where City=?) as nb_total from usedAirports where City=?"
+            query = "Select IATA, Name, Country, (select count(City) from usedAirports where City=?) as nb_total from usedAirports where City=?"
             cur.execute(query,[depart,depart])
             result = cur.fetchmany()
             if(len(result) > 0):
-                nbCity = result[0][2]
-                self.liste_de_vols.insert(tk.END,nbCity)
+                nbCityd = result[0][3]
+                self.liste_de_vols.insert(tk.END,nbCityd)
 
-        if(nbCity > 1):
+        if(nbCityd > 1):
             OPTIONS = []
             
             while len(result) > 0:
                 for row in result:
-                        OPTIONS.append(row[1] +', '+ row[0]) 
+                        OPTIONS.append(row[1] +', '+ row[0]+', '+row[2]) 
                 result = cur.fetchmany()
              
             box = Tk()
@@ -273,52 +293,80 @@ class Horaires_tk(tk.Tk):
             variable.set(OPTIONS[0]) # default value
             w = apply(OptionMenu, (box, variable) + tuple(OPTIONS))
             w.pack()
-            w = Button(box, text="OK", width=10, command=lambda: self.ok(variable.get()), default=ACTIVE)
+            w = Button(box, text="OK", width=10, command=lambda: self.okd(variable.get()), default=ACTIVE)
             w.pack(side=LEFT, padx=5, pady=5)
             w = Button(box, text="Cancel", width=10, command=box.destroy)
             w.pack(side=LEFT, padx=5, pady=5)
+        
+
+        if(len(arrivee) > 3 and nbCityd <= 1):
+            query = "Select IATA, Name, Country, (select count(City) from usedAirports where City=?) as nb_total from usedAirports where City=?"
+            cur.execute(query,[arrivee,arrivee])
+            result = cur.fetchmany()
+            if(len(result) > 0):
+                nbCitya = result[0][3]
+                self.liste_de_vols.insert(tk.END,nbCitya)
+
+        if(nbCitya > 1 and nbCityd <= 1):
+            OPTIONS = []
             
-        # Test des villes (aéroports avec le même nom de ville mais pas le même IATA
+            while len(result) > 0:
+                for row in result:
+                        OPTIONS.append(row[1] +', '+ row[0]+', '+row[2]) 
+                result = cur.fetchmany()
+             
+            box2 = Tk()
+            self.right = box2
+            variable = StringVar(box2)
+            variable.set(OPTIONS[0]) # default value
+            w = apply(OptionMenu, (box2, variable) + tuple(OPTIONS))
+            w.pack()
+            w = Button(box2, text="OK", width=10, command=lambda: self.oka(variable.get()), default=ACTIVE)
+            w.pack(side=LEFT, padx=5, pady=5)
+            w = Button(box2, text="Cancel", width=10, command=box2.destroy)
+            w.pack(side=LEFT, padx=5, pady=5)
+            
+            # Test des villes (aéroports avec le même nom de ville mais pas le même IATA
         # Test à la saisie ou test à la recherche ?
         
-        cur = self.conn.cursor()
-        query = "SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA";
-        parameters = [] 
-        if (len(depart) > 0 and len(arrivee) > 0):
-            if(len(depart) <= 3):
-                query += " AND UPPER(Departure)=UPPER(?)"
-            else:
-                query += " AND UPPER(a1.City)=UPPER(?)"
-            if(len(arrivee) <= 3):
-                query += " AND UPPER(Arrival)=UPPER(?)"
-            else:
-                query += " AND UPPER(a2.City)=UPPER(?)"
-            parameters.append(depart)
-            parameters.append(arrivee)
+        if(nbCityd <= 1 and nbCitya <= 1):
+            cur = self.conn.cursor()
+            query = "SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA";
+            parameters = [] 
+            if (len(depart) > 0 and len(arrivee) > 0):
+                if(len(depart) <= 3):
+                    query += " AND UPPER(Departure)=UPPER(?)"
+                else:
+                    query += " AND UPPER(a1.City)=UPPER(?)"
+                if(len(arrivee) <= 3):
+                    query += " AND UPPER(Arrival)=UPPER(?)"
+                else:
+                    query += " AND UPPER(a2.City)=UPPER(?)"
+                parameters.append(depart)
+                parameters.append(arrivee)
             #cur.execute("SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND Departure=? AND Arrival=?",[depart,arrivee])
-        if (len(arrivee) > 0 and len(depart) <= 0):
-            if(len(arrivee) <= 3):
-                query += " AND UPPER(Arrival)=UPPER(?)"
-            else:
-                query += " AND UPPER(a2.City)=UPPER(?)"
-            parameters.append(arrivee)
+            if (len(arrivee) > 0 and len(depart) <= 0):
+                if(len(arrivee) <= 3):
+                    query += " AND UPPER(Arrival)=UPPER(?)"
+                else:
+                    query += " AND UPPER(a2.City)=UPPER(?)"
+                parameters.append(arrivee)
             #cur.execute("SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND Arrival=?",[arrivee])
-        if (len(depart) > 0 and len(arrivee) <= 0):
-            if(len(depart) <= 3):
-                query += " AND UPPER(Departure)=UPPER(?)"
-            else:
-                query += " AND UPPER(a1.City)=UPPER(?)"
-            parameters.append(depart)
+            if (len(depart) > 0 and len(arrivee) <= 0):
+                if(len(depart) <= 3):
+                    query += " AND UPPER(Departure)=UPPER(?)"
+                else:
+                    query += " AND UPPER(a1.City)=UPPER(?)"
+                parameters.append(depart)
             #cur.execute("SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND Departure=?",[depart])
     #SELECT f.Departure, a1.City, f.Arrival, a2.City FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA
 
-        if parameters != []:
-            cur.execute(query, parameters)
-        result = cur.fetchmany()
-        found = 0
-        display = ''
+            if parameters != []:
+                cur.execute(query, parameters)
+            result = cur.fetchmany()
+            found = 0
+            display = ''
         
-        if(nbCity <= 1):
             while len(result) > 0:
                 for row in result:
                     i = 0
@@ -329,10 +377,10 @@ class Horaires_tk(tk.Tk):
                     self.liste_de_vols.insert(tk.END,display)
                     found += 1
                     result = cur.fetchmany()
-        if (found == 0 and nbCity <= 1):
-            self.liste_de_vols.insert(tk.END, '*** No flights found ***')
+            if (found == 0 and nbCityd <= 1):
+                self.liste_de_vols.insert(tk.END, '*** No flights found ***')
         
-        if(nbCity <= 1):
+            if(nbCityd <= 1 and nbCitya <= 1):
         #
         #  AprÃ¨s avoir affichÃ©, on rÃ©cupÃ¨re tous les sous-Ã©lÃ©ments
         #  du formulaire pour les dÃ©sactiver. On rÃ©active ensuite
@@ -340,9 +388,9 @@ class Horaires_tk(tk.Tk):
         #
 
 
-            for element in self.formulaire.children.values():
-                element.config(state = tk.DISABLED)
-            self.bouton_RAZ.config(state = tk.NORMAL)
+                for element in self.formulaire.children.values():
+                    element.config(state = tk.DISABLED)
+                self.bouton_RAZ.config(state = tk.NORMAL)
         cur.close()
 
 
