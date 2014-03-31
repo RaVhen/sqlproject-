@@ -46,8 +46,9 @@ class Horaires_tk(tk.Tk):
         print name
         result = name.split(", ")
         print result[1]
-        self.depart.delete(0, END)
-        self.depart.insert(0,result[1])
+        if(result[1] != 'All'):
+            self.depart.delete(0, END)
+            self.depart.insert(0,result[1])
         self.cancel()
 
     def oka(self, variable, event=None):
@@ -197,9 +198,9 @@ class Horaires_tk(tk.Tk):
         # et une liste que l'on pourra dÃ©rouler
         #
         entete = tk.Label(resultat,
-                               text=format(format(' Vol', '10.10s')
-                                   + ' ' + format('Départ', '10.10s')
-                                   + ' ' + format('Arrivée', '10.10s')
+                               text=format(format(' Vol', '6.6s')
+                                   + ' ' + format('Départ', '20.20s')
+                                   + ' ' + format('Arrivée', '20.20s')
                                    + ' ' + format('Durée', '10.10s')
                                    + ' ' + format('Compagnie Aérienne',
                                                   '20.20s')),
@@ -224,7 +225,7 @@ class Horaires_tk(tk.Tk):
                                        xscrollcommand=horizon.set,
                                        bg='lightgray',
                                        height=10,
-                                       width=65,
+                                       width=73,
                                        font=("Courier","12"),
                                        listvariable=self.donnees)
         self.liste_de_vols.pack(side=tk.LEFT, fill=tk.BOTH)
@@ -269,10 +270,10 @@ class Horaires_tk(tk.Tk):
         arrivee = self.arrivee.get();
         nbCityd = 0;
         nbCitya = 0;
-        done = False
+        All = False
         cur = self.conn.cursor()
         if(len(depart) > 3):
-            query = "Select IATA, Name, Country, (select count(City) from usedAirports where City=?) as nb_total from usedAirports where City=?"
+            query = "Select IATA, Name, Country, (select count(City) from usedAirports where UPPER(City)=UPPER(?)) as nb_total, City from usedAirports where UPPER(City)=UPPER(?)"
             cur.execute(query,[depart,depart])
             result = cur.fetchmany()
             if(len(result) > 0):
@@ -286,7 +287,9 @@ class Horaires_tk(tk.Tk):
                 for row in result:
                         OPTIONS.append(row[1] +', '+ row[0]+', '+row[2]) 
                 result = cur.fetchmany()
-             
+            OPTIONS.append(depart.title()+ ' tous aéroports'+', All')
+            
+                
             box = Tk()
             self.top = box
             variable = StringVar(box)
@@ -297,10 +300,10 @@ class Horaires_tk(tk.Tk):
             w.pack(side=LEFT, padx=5, pady=5)
             w = Button(box, text="Cancel", width=10, command=box.destroy)
             w.pack(side=LEFT, padx=5, pady=5)
-        
 
+            
         if(len(arrivee) > 3 and nbCityd <= 1):
-            query = "Select IATA, Name, Country, (select count(City) from usedAirports where City=?) as nb_total from usedAirports where City=?"
+            query = "Select IATA, Name, Country, (select count(City) from usedAirports where UPPER(City)=UPPER(?)) as nb_total from usedAirports where UPPER(City)=UPPER(?)"
             cur.execute(query,[arrivee,arrivee])
             result = cur.fetchmany()
             if(len(result) > 0):
@@ -366,14 +369,13 @@ class Horaires_tk(tk.Tk):
             result = cur.fetchmany()
             found = 0
             display = ''
-        
             while len(result) > 0:
                 for row in result:
                     i = 0
-                    display = ''
-                    while(i < len(row)):
-                        display += str(row[i]) + ' ' 
-                        i+=1
+                    display = ' '+format(str(row[6]), '4.4s') + ' '+format(str(row[10]), '17.17s') + ' '+format(str(row[17]), '17.17s') + '       '+format(str(row[7]), '10.10s')+ ' '+format(str(row[5]), '10.10s') + ' '
+                    #while(i < len(row)):
+                     #   display += str(row[i]) + ' ' 
+                      #  i+=1
                     self.liste_de_vols.insert(tk.END,display)
                     found += 1
                     result = cur.fetchmany()
