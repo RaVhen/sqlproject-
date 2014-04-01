@@ -3,7 +3,7 @@
 import sys
 import os
 import sqlite3
-import datetime as dt
+import datetime as dt,datetime
 #
 #   Pour passer Ã  python 3 il suffit de changer Tkinter en tkinter.
 #   On donne l'alias tk pour qu'il n'y ait rien Ã  modifier ailleurs
@@ -26,12 +26,14 @@ class Horaires_tk(tk.Tk):
     def __init__(self, parent, emplacement):
         tk.Tk.__init__(self,parent)
         self.parent = parent
+        self.configure(bg = 'lightblue')
         self.emplacement = emplacement
         self.createWidgets()
         self.initialize()
 
     def createWidgets(self):
-        top=self.winfo_toplevel()                
+        top=self.winfo_toplevel()
+        top.configure(bg = 'lightblue')
         top.rowconfigure(0, weight=1)            
         top.columnconfigure(0, weight=1)         
         self.rowconfigure(0, weight=1)           
@@ -121,6 +123,8 @@ class Horaires_tk(tk.Tk):
         #
         self.formulaire = tk.Frame(self, padx=5, pady=5)
         self.formulaire.grid(column=0, row=0)
+        self.configure(background = 'lightblue')
+        self.formulaire.configure(background = 'lightblue')
         #
         #  On attache Ã  l'Ã©vÃ¨nement <Destroy> (fermeture de la
         #  fenÃªtre) la mÃ©thode ferme_fichier() qui, comme son
@@ -135,6 +139,7 @@ class Horaires_tk(tk.Tk):
         self.formulaire.bind("<Destroy>", self.ferme_fichier)
         resultat = tk.Frame(self, pady=10)
         resultat.grid(column=0, row=1)
+        resultat.configure(bg = 'lightblue')
 
         # -----------------------------------------------------
         # "formulaire" contient sa propre grille. A l'intÃ©rieur,
@@ -142,10 +147,10 @@ class Horaires_tk(tk.Tk):
         # des boutons (Button). Chaque fois le premier paramÃ¨tre
         # spÃ©cifie l'Ã©lÃ©ment parent.
         #
-        tk.Label(self.formulaire, text='De').grid(column=0, row=0)
+        tk.Label(self.formulaire, text='De', background = 'lightblue').grid(column=0, row=0)
         self.depart = tk.Entry(self.formulaire)
         self.depart.grid(column=0,row=1)
-        tk.Label(self.formulaire, text='A').grid(column=1, row=0)
+        tk.Label(self.formulaire, text='A', background = 'lightblue').grid(column=1, row=0)
         self.arrivee = tk.Entry(self.formulaire)
         self.arrivee.grid(column=1,row=1)
     
@@ -156,7 +161,7 @@ class Horaires_tk(tk.Tk):
         # S = vers le bas, W = Ã  gauche, E = Ã  droite.
         #
         tk.Label(self.formulaire,
-                      text='Départ le ').grid(column=0,
+                      text='Départ le ', background = 'lightblue').grid(column=0,
                                               row=2,
                                               sticky=tk.E)
         #
@@ -176,6 +181,7 @@ class Horaires_tk(tk.Tk):
         #
         self.date_depart = tk.Entry(self.formulaire,
                                          width=8,
+                                    
                                          fg='darkgray',
                                          font=("Courier","10"),
                                          validate='focusin',
@@ -185,7 +191,7 @@ class Horaires_tk(tk.Tk):
         self.date_depart.grid(column=1, row=2, sticky=tk.W)
 
         self.bouton_recherche = tk.Button(self.formulaire,
-                                               text="Recherche",
+                                               text="Recherche", 
                                                command= self.recherche)
         self.bouton_recherche.grid(column=0,row=3, padx=10)
         self.bouton_RAZ = tk.Button(self.formulaire,
@@ -207,7 +213,7 @@ class Horaires_tk(tk.Tk):
                                                   '20.20s')),
                                anchor='w',
                                font=('Courier', '12', 'bold'),
-                               bg='MidnightBlue',
+                               bg='darkred',
                                fg='White') 
         entete.pack(side=tk.TOP)
         #
@@ -224,12 +230,13 @@ class Horaires_tk(tk.Tk):
         self.liste_de_vols = tk.Listbox(resultat,
                                        yscrollcommand=ascenseur.set,
                                        xscrollcommand=horizon.set,
-                                       bg='lightgray',
+                                       bg='darkgray',
                                        height=10,
-                                       width=73,
+                                       width=75,
+                                       
                                        font=("Courier","12"),
                                        listvariable=self.donnees)
-        self.liste_de_vols.pack(side=tk.LEFT, fill=tk.BOTH)
+        self.liste_de_vols.pack(side=tk.LEFT, fill=tk.BOTH, expand = 1)
         ascenseur.config(command=self.liste_de_vols.yview)
         #horizon.config(command=self.liste_de_vols.xview)
         #
