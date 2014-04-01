@@ -3,6 +3,7 @@
 import sys
 import os
 import sqlite3
+import datetime as dt
 #
 #   Pour passer Ã  python 3 il suffit de changer Tkinter en tkinter.
 #   On donne l'alias tk pour qu'il n'y ait rien Ã  modifier ailleurs
@@ -266,6 +267,25 @@ class Horaires_tk(tk.Tk):
         #  dans le langage de programmation ou en SQL, c'est un peu
         #  comme on le sent)
         #
+
+        
+        date = self.date_depart.get()
+        
+        if(len(date) >= 8 and date != 'AAAAMMJJ'):
+            date = (int)(self.date_depart.get().replace('/',''))
+            date = (int)(self.date_depart.get().replace('-',''))
+            year = date/10000
+            month = date/100 - year*100
+            day = date - (year*10000 + month*100)
+
+            stddate = str(year) + str(month) + str(day)
+            jourdep = dt.datetime.strptime(stddate, '%Y%m%d').isoweekday()
+	
+        else:
+            stddate = (str)(dt.date.today())
+            jourdep = dt.datetime.strptime(stddate, '%Y-%m-%d').isoweekday()
+
+        
         depart = self.depart.get();
         arrivee = self.arrivee.get();
         nbCityd = 0;
@@ -334,8 +354,9 @@ class Horaires_tk(tk.Tk):
         
         if(nbCityd <= 1 and nbCitya <= 1):
             cur = self.conn.cursor()
-            query = "SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA";
-            parameters = [] 
+            query = "SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND f.Day_op like('%'||?||'%')";
+            parameters = []
+            parameters.append(jourdep) 
             if (len(depart) > 0 and len(arrivee) > 0):
                 if(len(depart) <= 3):
                     query += " AND UPPER(Departure)=UPPER(?)"
