@@ -210,7 +210,9 @@ class Horaires_tk(tk.Tk):
                                    + ' ' + format('Arrivée', '20.20s')
                                    + ' ' + format('Durée', '10.10s')
                                    + ' ' + format('Compagnie Aérienne',
-                                                  '20.20s')),
+                                                  '20.20s'))
+                                   + ' ' + format('Date de départ', '20.20s')
+                                   + ' ' + format('Date de d\'arrivée ', '20.20s'),
                                anchor='w',
                                font=('Courier', '12', 'bold'),
                                bg='darkred',
@@ -231,9 +233,8 @@ class Horaires_tk(tk.Tk):
                                        yscrollcommand=ascenseur.set,
                                        xscrollcommand=horizon.set,
                                        bg='darkgray',
-                                       height=10,
-                                       width=75,
-                                       
+                                       height=20,
+                                       width=120,
                                        font=("Courier","12"),
                                        listvariable=self.donnees)
         self.liste_de_vols.pack(side=tk.LEFT, fill=tk.BOTH, expand = 1)
@@ -400,7 +401,27 @@ class Horaires_tk(tk.Tk):
             while len(result) > 0:
                 for row in result:
                     i = 0
-                    display = ' '+format(str(row[6]), '4.4s') + ' '+format(str(row[10]), '17.17s') + ' '+format(str(row[17]), '17.17s') + '       '+format(str(row[7]), '10.10s')+ ' '+format(str(row[5]), '10.10s') + ' '
+                     # Récupération du temps de vol
+                    duration = dt.timedelta(minutes = row[7])
+                    
+                    #Récupération du jour et de l'heure de départ
+                    dep_time = str(row[3])
+                    stdday = stddate +' '+ dep_time
+                    dep_day = dt.datetime.strptime(stdday,'%Y-%m-%d %H:%M')
+                    
+                    arr_day = dep_day + duration
+                    
+                    #Récupération des fuseaux horaires
+                    dep_tz = row[15]
+                    dep_tz = (int) (dep_tz * 60) # passage en minute
+                    arr_tz = row[22]
+                    arr_tz = (int) (arr_tz * 60) # passage en minute
+                    
+                    tz = dt.timedelta(minutes = arr_tz - dep_tz)
+                    
+                    arr_day_local = arr_day + tz
+                    
+                    display = ' '+format(str(row[6]), '4.4s') + ' '+format(str(row[10]), '17.17s') + '  '+format(str(row[17]), '17.17s') + '      '+format(str(duration), '10.10s')+ '     '+format(str(row[5]), '10.10s') + '    '+str(dep_day)+'     '+str(arr_day)+'/'+str(arr_day_local)+' '
                     #while(i < len(row)):
                      #   display += str(row[i]) + ' ' 
                       #  i+=1
