@@ -54,6 +54,9 @@ class Horaires_tk(tk.Tk):
             self.depart.insert(0,result[1])
         self.cancel()
 
+    # C'est moche mais je n'ai pas compris comment on pouvait changer
+    # pour détruire les objets apppelés.
+
     def oka(self, variable, event=None):
 
         if not self.validate():
@@ -203,7 +206,7 @@ class Horaires_tk(tk.Tk):
         # -----------------------------------------------------
         # On prÃ©pare l'emplacement des rÃ©sultats, avec un en-tÃªte
         # et une liste que l'on pourra dÃ©rouler
-        #
+                    
         entete = tk.Label(resultat,
                                text=format(format(' Vol', '6.6s')
                                    + ' ' + format('Départ', '20.20s')
@@ -211,8 +214,8 @@ class Horaires_tk(tk.Tk):
                                    + ' ' + format('Durée', '10.10s')
                                    + ' ' + format('Compagnie Aérienne',
                                                   '20.20s'))
-                                   + ' ' + format('Date de départ', '20.20s')
-                                   + ' ' + format('Date de d\'arrivée ', '20.20s'),
+                                   + ' ' + format('Date de départ', '23.30s')
+                                   + ' ' + format('Date de d\'arrivée fuseau départ/arrivée', '52.52s') ,
                                anchor='w',
                                font=('Courier', '12', 'bold'),
                                bg='darkred',
@@ -234,7 +237,7 @@ class Horaires_tk(tk.Tk):
                                        xscrollcommand=horizon.set,
                                        bg='darkgray',
                                        height=20,
-                                       width=120,
+                                       width=150,
                                        font=("Courier","12"),
                                        listvariable=self.donnees)
         self.liste_de_vols.pack(side=tk.LEFT, fill=tk.BOTH, expand = 1)
@@ -376,22 +379,18 @@ class Horaires_tk(tk.Tk):
                     query += " AND UPPER(a2.City)=UPPER(?)"
                 parameters.append(depart)
                 parameters.append(arrivee)
-            #cur.execute("SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND Departure=? AND Arrival=?",[depart,arrivee])
             if (len(arrivee) > 0 and len(depart) <= 0):
                 if(len(arrivee) <= 3):
                     query += " AND UPPER(Arrival)=UPPER(?)"
                 else:
                     query += " AND UPPER(a2.City)=UPPER(?)"
                 parameters.append(arrivee)
-            #cur.execute("SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND Arrival=?",[arrivee])
             if (len(depart) > 0 and len(arrivee) <= 0):
                 if(len(depart) <= 3):
                     query += " AND UPPER(Departure)=UPPER(?)"
                 else:
                     query += " AND UPPER(a1.City)=UPPER(?)"
                 parameters.append(depart)
-            #cur.execute("SELECT * FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA AND Departure=?",[depart])
-    #SELECT f.Departure, a1.City, f.Arrival, a2.City FROM flights f, usedAirports a1, usedAirports a2 where f.Departure = a1.IATA AND f.Arrival = a2.IATA
 
             if parameters != []:
                 cur.execute(query, parameters)
@@ -422,9 +421,6 @@ class Horaires_tk(tk.Tk):
                     arr_day_local = arr_day + tz
                     
                     display = ' '+format(str(row[6]), '4.4s') + ' '+format(str(row[10]), '17.17s') + '  '+format(str(row[17]), '17.17s') + '      '+format(str(duration), '10.10s')+ '     '+format(str(row[5]), '10.10s') + '    '+str(dep_day)+'     '+str(arr_day)+'/'+str(arr_day_local)+' '
-                    #while(i < len(row)):
-                     #   display += str(row[i]) + ' ' 
-                      #  i+=1
                     self.liste_de_vols.insert(tk.END,display)
                     found += 1
                     result = cur.fetchmany()
@@ -432,12 +428,6 @@ class Horaires_tk(tk.Tk):
                 self.liste_de_vols.insert(tk.END, '*** No flights found ***')
         
             if(nbCityd <= 1 and nbCitya <= 1):
-        #
-        #  AprÃ¨s avoir affichÃ©, on rÃ©cupÃ¨re tous les sous-Ã©lÃ©ments
-        #  du formulaire pour les dÃ©sactiver. On rÃ©active ensuite
-        #  le bouton "Nouvelle Recherche"
-        #
-
 
                 for element in self.formulaire.children.values():
                     element.config(state = tk.DISABLED)
@@ -446,53 +436,26 @@ class Horaires_tk(tk.Tk):
 
 
     def remise_a_zero(self):
-        # PrÃ©paration pour une nouvelle recherche
-        # On efface d'abord le rÃ©sultat prÃ©cÃ©dent.
         self.liste_de_vols.delete(0, tk.END)
         # On rÃ©-active tous les Ã©lÃ©ments du formulaire
         for element in self.formulaire.children.values():
             element.config(state = tk.NORMAL)
-        # On efface le contenu des champs, et on remet le format
-        # en gris pour la date.
         self.depart.delete(0, tk.END)
         self.arrivee.delete(0, tk.END)
         self.date_depart.delete(0, tk.END)
         self.date_depart.config(fg='darkgray')
         self.date_depart.insert(0, 'AAAAMMJJ')
-        # Il faut rÃ©activer ce qui efface le modÃ¨le et
-        # passe en noir, cela ne fonctionne qu'une fois
-        # sinon.
         self.date_depart.config(validate='focusin')
         self.date_depart.config(validatecommand=self.prepare_date)
         # On dÃ©sactive le bouton "Nouvelle Recherche"
         self.bouton_RAZ.config(state = tk.DISABLED)
-        # On positionne dans le champ correspondant Ã 
-        # l'aÃ©roport de dÃ©part.
         self.depart.focus_set()
         
     def reset(self):
-        # PrÃ©paration pour une nouvelle recherche
-        # On efface d'abord le rÃ©sultat prÃ©cÃ©dent.
         self.liste_de_vols.delete(0, tk.END)
-        # On rÃ©-active tous les Ã©lÃ©ments du formulaire
-        #for element in self.formulaire.children.values():
-            #element.config(state = tk.NORMAL)
-        # On efface le contenu des champs, et on remet le format
-        # en gris pour la date.
-        #self.depart.delete(0, tk.END)
-        #self.arrivee.delete(0, tk.END)
-        #self.date_depart.delete(0, tk.END)
-        #self.date_depart.config(fg='darkgray')
-        #self.date_depart.insert(0, 'AAAAMMJJ')
-        # Il faut rÃ©activer ce qui efface le modÃ¨le et
-        # passe en noir, cela ne fonctionne qu'une fois
-        # sinon.
         self.date_depart.config(validate='focusin')
         self.date_depart.config(validatecommand=self.prepare_date)
-        # On dÃ©sactive le bouton "Nouvelle Recherche"
         self.bouton_RAZ.config(state = tk.DISABLED)
-        # On positionne dans le champ correspondant Ã 
-        # l'aÃ©roport de dÃ©part.
         self.depart.focus_set()
 
 if __name__ == "__main__":
