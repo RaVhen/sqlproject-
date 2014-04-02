@@ -227,10 +227,6 @@ class Horaires_tk(tk.Tk):
         ascenseur = tk.Scrollbar(resultat)
         ascenseur.pack(side=tk.RIGHT, fill=tk.Y)
         horizon = tk.Scrollbar(resultat)
-        #horizon.pack(side=tk.BOTTOM, fill=tk.X)
-        #
-        #  Pour recevoir le rÃ©sultat de la requÃªte
-        #
         self.donnees = tk.StringVar()
         self.liste_de_vols = tk.Listbox(resultat,
                                        yscrollcommand=ascenseur.set,
@@ -247,7 +243,7 @@ class Horaires_tk(tk.Tk):
         #   Diverses opÃ©rations dÃ©finissant si l'on peut 
         #  redimensionner la fenÃªtre, etc.
         #
-        self.resizable(True,True)
+        self.resizable(False,False)
         self.update()
          #self.liste_de_vols.resizable(True,True)
         self.liste_de_vols.update()
@@ -309,7 +305,6 @@ class Horaires_tk(tk.Tk):
             result = cur.fetchmany()
             if(len(result) > 0):
                 nbCityd = result[0][3]
-                self.liste_de_vols.insert(tk.END,nbCityd)
 
         if(nbCityd > 1):
             OPTIONS = []
@@ -339,7 +334,6 @@ class Horaires_tk(tk.Tk):
             result = cur.fetchmany()
             if(len(result) > 0):
                 nbCitya = result[0][3]
-                self.liste_de_vols.insert(tk.END,nbCitya)
 
         if(nbCitya > 1 and nbCityd <= 1):
             OPTIONS = []
@@ -377,6 +371,7 @@ class Horaires_tk(tk.Tk):
                     query += " AND UPPER(Arrival)=UPPER(?)"
                 else:
                     query += " AND UPPER(a2.City)=UPPER(?)"
+		
                 parameters.append(depart)
                 parameters.append(arrivee)
             if (len(arrivee) > 0 and len(depart) <= 0):
@@ -384,6 +379,7 @@ class Horaires_tk(tk.Tk):
                     query += " AND UPPER(Arrival)=UPPER(?)"
                 else:
                     query += " AND UPPER(a2.City)=UPPER(?)"
+		query += " order by a1.City"
                 parameters.append(arrivee)
             if (len(depart) > 0 and len(arrivee) <= 0):
                 if(len(depart) <= 3):
@@ -391,10 +387,11 @@ class Horaires_tk(tk.Tk):
                 else:
                     query += " AND UPPER(a1.City)=UPPER(?)"
                 parameters.append(depart)
-
-            if parameters != []:
+            if (parameters != []):
                 cur.execute(query, parameters)
-            result = cur.fetchmany()
+            	result = cur.fetchmany()
+	    else:
+		result = ''
             found = 0
             display = ''
             while len(result) > 0:
